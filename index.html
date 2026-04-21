@@ -8,7 +8,7 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800;900&display=swap" rel="stylesheet">
 
 <style>
     :root {
@@ -93,10 +93,15 @@
     .file-drop-zone:hover, .file-drop-zone.dragover { border-color: var(--primary); background: var(--primary-glow); }
     .file-drop-zone input[type="file"] { display: none; }
     
+    /* Fix drag flicker by disabling pointer events on children */
+    .file-drop-zone .file-icon, 
+    .file-drop-zone .file-instruction, 
+    .file-drop-zone .file-subtext { pointer-events: none; }
+    
     .file-icon { font-size: 3rem; margin-bottom: 1rem; opacity: 0.8; }
     .file-instruction { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; }
     .file-subtext { font-size: 0.9rem; color: var(--text-muted); }
-    .file-details { display: none; background: var(--surface-hover); padding: 1rem; border-radius: 8px; margin-top: 1rem; border: 1px solid var(--border); word-break: break-all; }
+    .file-details { display: none; background: var(--surface-hover); padding: 1rem; border-radius: 8px; margin-top: 1rem; border: 1px solid var(--border); word-break: break-all; pointer-events: auto; }
     .file-details strong { color: var(--primary); }
 
     .control-group { margin-bottom: 1.5rem; }
@@ -119,12 +124,12 @@
         color: #000; border: none; border-radius: 12px; font-size: 1.2rem; font-weight: 800;
         cursor: pointer; margin-top: 1rem; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 0.8rem;
     }
-    .btn-main:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0, 255, 136, 0.4); }
+    .btn-main:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0, 255, 136, 0.4); }
     .btn-main:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; box-shadow: none; transform: none; }
     
     /* Decrypt Specific Colors */
     .btn-decrypt { background: linear-gradient(135deg, var(--secondary), #a044ff); }
-    .btn-decrypt:hover { box-shadow: 0 10px 25px rgba(0, 212, 255, 0.4); }
+    .btn-decrypt:hover:not(:disabled) { box-shadow: 0 10px 25px rgba(0, 212, 255, 0.4); }
 
     .alert-box {
         background: rgba(0, 255, 136, 0.08); border: 1px solid var(--primary); color: var(--text);
@@ -186,7 +191,7 @@
             <div class="file-drop-zone" id="drop-zone-enc">
                 <div class="file-icon">📄➡️📦</div>
                 <div class="file-instruction">اسحب وأفلت الملف هنا للتشفير</div>
-                <div class="file-subtext">أو انقر لاختيار ملف (أقصى حجم ننصح به 150MB)</div>
+                <div class="file-subtext">أو انقر لاختيار ملف (أقصى حجم 200MB)</div>
                 <input type="file" id="file-input-enc">
                 <div class="file-details" id="details-enc"></div>
             </div>
@@ -195,7 +200,7 @@
                 <div class="control-header"><span>كلمة المرور (مفتاح التشفير)</span></div>
                 <div class="input-wrapper">
                     <input type="password" id="pass-enc" class="text-input" placeholder="اكتب كلمة مرور قوية جداً...">
-                    <button class="input-icon-btn" onclick="toggleVis('pass-enc')">👁️</button>
+                    <button class="input-icon-btn toggle-pass" data-target="pass-enc">👁️</button>
                 </div>
             </div>
 
@@ -224,8 +229,8 @@
             <div class="control-group">
                 <div class="control-header"><span>كلمة المرور الأصلية</span></div>
                 <div class="input-wrapper">
-                    <input type="password" id="pass-dec" class="text-input" placeholder="ادخل مفتاح فك التشفير...">
-                    <button class="input-icon-btn" onclick="toggleVis('pass-dec')">👁️</button>
+                    <input type="password" id="pass-dec" class="text-input" placeholder="أدخل مفتاح فك التشفير...">
+                    <button class="input-icon-btn toggle-pass" data-target="pass-dec">👁️</button>
                 </div>
             </div>
 
@@ -246,7 +251,7 @@
                     <li><strong>الخصوصية المطلقة:</strong> بمجرد فتح هذه الصفحة، يمكنك فصل الإنترنت، وستظل الأداة تعمل. لا شيء يغادر جهازك.</li>
                     <li><strong>قوة التشفير:</strong> نستخدم بروتوكول <code>AES-GCM 256-bit</code> المعتمد عسكرياً، ومعيار <code>PBKDF2</code> لتوليد المفاتيح الآمنة من كلمة المرور (بـ 100,000 جولة تشفير).</li>
                     <li><strong>محتوى الملف المشفر:</strong> نحتفظ باسم الملف ونوعه بشكل مشفر داخل الملف الجديد ليعود لأصله تماماً عند الفك.</li>
-                    <li><strong>قيود المتصفح:</strong> ينصح بعدم استخدام ملفات عملاقة جداً (أكبر من 200MB) لأن المعالجة تتم داخل الذاكرة العشوائية (RAM) لمتصفحك وقد تسبب تباطؤاً في بعض الأجهزة.</li>
+                    <li><strong>قيود المتصفح:</strong> الحد الأقصى لحجم الملف هو 200MB لأن المعالجة تتم داخل الذاكرة العشوائية (RAM) لمتصفحك لتجنب انهيار المتصفح.</li>
                 </ul>
             </div>
         </section>
@@ -261,7 +266,10 @@
 <div class="toast" id="toast">تمت العملية!</div>
 
 <script>
-    // --- إدارة علامات التبويب ---
+    // --- Configuration ---
+    const MAX_FILE_SIZE = 200 * 1024 * 1024; // 200 MB Limit to prevent browser RAM crash
+
+    // --- Tab Management ---
     const navBtns = document.querySelectorAll('.nav-btn');
     const views = document.querySelectorAll('.view-section');
     
@@ -274,26 +282,30 @@
         });
     });
 
-    // --- إظهار/إخفاء كلمة المرور ---
-    window.toggleVis = function(inputId) {
-        const input = document.getElementById(inputId);
-        const btn = input.nextElementSibling;
-        if (input.type === "password") {
-            input.type = "text";
-            btn.style.color = "var(--primary)";
-        } else {
-            input.type = "password";
-            btn.style.color = "var(--text-muted)";
-        }
-    }
+    // --- Password Visibility Toggle ---
+    document.querySelectorAll('.toggle-pass').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const input = document.getElementById(this.dataset.target);
+            if (input.type === "password") {
+                input.type = "text";
+                this.style.color = "var(--primary)";
+            } else {
+                input.type = "password";
+                this.style.color = "var(--text-muted)";
+            }
+        });
+    });
 
-    // --- التنبيهات ---
+    // --- Toast Notifications ---
+    let toastTimeout;
     function showToast(msg, isError = false) {
         const toast = document.getElementById('toast');
         toast.textContent = msg;
         if(isError) toast.classList.add('error'); else toast.classList.remove('error');
         toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 3500);
+        
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => toast.classList.remove('show'), 4000);
     }
 
     function formatBytes(bytes) {
@@ -303,21 +315,26 @@
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
-    // --- إدارة سحب وإفلات الملفات ---
+    // --- File Drag & Drop Management ---
     function setupFileUploader(zoneId, inputId, detailsId, btnId) {
         const zone = document.getElementById(zoneId);
         const input = document.getElementById(inputId);
         const details = document.getElementById(detailsId);
         const btn = document.getElementById(btnId);
 
-        zone.addEventListener('click', () => input.click());
+        zone.addEventListener('click', (e) => {
+            if(e.target !== details) input.click();
+        });
         
         zone.addEventListener('dragover', (e) => {
             e.preventDefault();
             zone.classList.add('dragover');
         });
         
-        zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+        zone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            zone.classList.remove('dragover');
+        });
         
         zone.addEventListener('drop', (e) => {
             e.preventDefault();
@@ -333,6 +350,15 @@
         function updateFileDetails() {
             if(input.files.length > 0) {
                 const file = input.files[0];
+                
+                if (file.size > MAX_FILE_SIZE) {
+                    showToast(`الملف كبير جداً! الحد الأقصى هو ${formatBytes(MAX_FILE_SIZE)}.`, true);
+                    input.value = "";
+                    details.style.display = 'none';
+                    btn.disabled = true;
+                    return;
+                }
+
                 details.style.display = 'block';
                 details.innerHTML = `تم اختيار: <strong>${file.name}</strong> (${formatBytes(file.size)})`;
                 btn.disabled = false;
@@ -342,7 +368,7 @@
             }
         }
 
-        return { input, btn };
+        return { input, btn, details };
     }
 
     const encSetup = setupFileUploader('drop-zone-enc', 'file-input-enc', 'details-enc', 'btn-encrypt');
@@ -352,12 +378,11 @@
 
 
     // ----------------------------------------------------
-    // المعالج الأساسي للتشفير (Web Crypto API)
+    // Core Cryptography (Web Crypto API)
     // ----------------------------------------------------
     const ALGORITHM = "AES-GCM";
     const PBKDF2_ITERATIONS = 100000;
     
-    // تحويل الباسورد إلى مفتاح
     async function deriveKey(password, salt) {
         const encoder = new TextEncoder();
         const keyMaterial = await window.crypto.subtle.importKey(
@@ -384,7 +409,7 @@
         }
     }
 
-    // --- وظيفة التشفير ---
+    // --- Encrypt Function ---
     document.getElementById('btn-encrypt').addEventListener('click', async () => {
         const file = encSetup.input.files[0];
         const password = passEnc.value;
@@ -395,21 +420,16 @@
         toggleLoading('btn-encrypt', true);
 
         try {
-            // 1. تحضير الميتاداتا (لحفظ اسم ونوع الملف الأصلي داخل الملف المشفر)
             const metadata = JSON.stringify({ name: file.name, type: file.type });
             const metaBuffer = new TextEncoder().encode(metadata);
-            
-            // قراءة الملف كـ ArrayBuffer
             const fileBuffer = await file.arrayBuffer();
 
-            // 2. دمج طول الميتاداتا (4 بايت) + الميتاداتا نفسها + بيانات الملف الحقيقية
             const combinedBuffer = new Uint8Array(4 + metaBuffer.length + fileBuffer.byteLength);
             const dataView = new DataView(combinedBuffer.buffer);
-            dataView.setUint32(0, metaBuffer.length); // تسجيل حجم النص التعريفي
+            dataView.setUint32(0, metaBuffer.length); 
             combinedBuffer.set(metaBuffer, 4);
             combinedBuffer.set(new Uint8Array(fileBuffer), 4 + metaBuffer.length);
 
-            // 3. التشفير
             const salt = window.crypto.getRandomValues(new Uint8Array(16));
             const iv = window.crypto.getRandomValues(new Uint8Array(12));
             const key = await deriveKey(password, salt);
@@ -418,13 +438,11 @@
                 { name: ALGORITHM, iv: iv }, key, combinedBuffer
             );
 
-            // 4. تجميع الملف النهائي المشفر: [16 Bytes Salt] + [12 Bytes IV] + [Ciphertext]
             const finalPackage = new Uint8Array(16 + 12 + encryptedData.byteLength);
             finalPackage.set(salt, 0);
             finalPackage.set(iv, 16);
             finalPackage.set(new Uint8Array(encryptedData), 28);
 
-            // 5. إنشاء وتنزيل الملف
             const blob = new Blob([finalPackage], { type: 'application/octet-stream' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -435,9 +453,8 @@
             
             showToast("✅ تم التشفير بنجاح! احتفظ بالملف الجديد ومفتاحه.");
             
-            // تصفير الخانات
             encSetup.input.value = "";
-            document.getElementById('details-enc').style.display = "none";
+            encSetup.details.style.display = "none";
             passEnc.value = "";
             encSetup.btn.disabled = true;
 
@@ -449,52 +466,53 @@
         }
     });
 
-    // --- وظيفة فك التشفير ---
+    // --- Decrypt Function ---
     document.getElementById('btn-decrypt').addEventListener('click', async () => {
         const file = decSetup.input.files[0];
         const password = passDec.value;
 
         if(!file) return showToast("اختر الملف المشفر (.hisn) أولاً", true);
-        if(!password) return showToast("ادخل مفتاح فك التشفير!", true);
+        if(!password) return showToast("أدخل مفتاح فك التشفير!", true);
         
         toggleLoading('btn-decrypt', true);
 
         try {
             const fileBuffer = await file.arrayBuffer();
             
-            if(fileBuffer.byteLength < 28) throw new Error("ملف غير صالح (صغير جداً)");
+            if(fileBuffer.byteLength < 28) throw new Error("الملف غير صالح أو تالف (صغير جداً)");
 
             const bufferView = new Uint8Array(fileBuffer);
-            
-            // 1. استخراج الـ Salt والـ IV من بداية الملف
             const salt = bufferView.slice(0, 16);
             const iv = bufferView.slice(16, 28);
             const ciphertext = bufferView.slice(28);
 
-            // 2. فك التشفير
             const key = await deriveKey(password, salt);
             let decryptedCombinedBuffer;
+            
             try {
                 decryptedCombinedBuffer = await window.crypto.subtle.decrypt(
                     { name: ALGORITHM, iv: iv }, key, ciphertext
                 );
             } catch (err) {
-                // فشل فك التشفير (99% سببه كلمة مرور خاطئة)
-                throw new Error("كلمة المرور خاطئة أو الملف تالف!");
+                throw new Error("كلمة المرور خاطئة، أو أن الملف تم العبث به!");
             }
 
-            // 3. فصل الميتاداتا عن الملف الأصلي
             const decryptedView = new Uint8Array(decryptedCombinedBuffer);
             const dataView = new DataView(decryptedCombinedBuffer);
             const metaLength = dataView.getUint32(0);
             
             const metaBuffer = decryptedView.slice(4, 4 + metaLength);
             const metadataStr = new TextDecoder().decode(metaBuffer);
-            const metadata = JSON.parse(metadataStr);
+            
+            let metadata;
+            try {
+                metadata = JSON.parse(metadataStr);
+            } catch (err) {
+                throw new Error("فشل قراءة بيانات الملف. قد يكون الملف تالفاً.");
+            }
             
             const originalFileBytes = decryptedView.slice(4 + metaLength);
 
-            // 4. إنشاء وإخراج الملف الأصلي
             const blob = new Blob([originalFileBytes], { type: metadata.type || 'application/octet-stream' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -505,9 +523,8 @@
 
             showToast("🔓 تم فك التشفير واستخراج الملف الأصلي!");
 
-            // تصفير الخانات
             decSetup.input.value = "";
-            document.getElementById('details-dec').style.display = "none";
+            decSetup.details.style.display = "none";
             passDec.value = "";
             decSetup.btn.disabled = true;
 
