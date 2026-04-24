@@ -8,9 +8,11 @@
     
     <!-- 
       سياسة CSP صارمة جداً للملف الموحد. 
-      [تنويه أمني للمحترفين]: للحصول على أمان مطلق (Zero-Trust) وحماية من الـ XSS في بيئة الإنتاج:
-      يجب فصل السكربت بالأسفل إلى ملف hisn.js وحساب الـ SHA-256 له، ثم استبدال 'unsafe-inline' بالتالي:
-      script-src 'sha256-YOUR_CALCULATED_HASH';
+      [تنويه أمني للمحترفين - Zero Trust Production]: 
+      للتخلص من 'unsafe-inline' وحماية التطبيق من XSS بنسبة 100% عند الاستضافة العامة:
+      1. انقل الجافاسكربت بالأسفل إلى ملف hisn.js
+      2. قم بحساب الهاش عبر الطرفية: openssl dgst -sha256 -binary hisn.js | openssl enc -base64
+      3. استبدل 'unsafe-inline' بالتالي: script-src 'sha256-الهاش_المستخرج';
     -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none';">
 
@@ -361,7 +363,7 @@
                     <li><strong>تشفير مضاعف:</strong> نستخدم خوارزمية <code>AES-GCM 256-bit</code> مع مفاتيح مشتقة عبر <code>PBKDF2</code> بـ <strong>1,000,000 دورة تجزئة (SHA-256)</strong> لتدمير أي محاولة كسر بالقوة الغاشمة.</li>
                     <li><strong>حماية ضد المراقبة الخلفية (Tab-Hide Wipe):</strong> كإجراء أمني صارم جداً، بمجرد انتقالك لتطبيق آخر أو تبويب آخر في المتصفح، يتم تدمير البيانات المفتوحة والذاكرة العشوائية الخاصة بها بشكل غير قابل للاسترجاع وفوراً.</li>
                     <li><strong>تصفير الذاكرة (Zero-fill):</strong> نستخدم الدوال الأمنية لمسح المصفوفات من الـ RAM عن طريق كتابة أصفار <code>0x00</code> على مستوى الـ <code>ArrayBuffer</code> فور الانتهاء لتجنب برمجيات فحص الذاكرة.</li>
-                    <li><strong>الشفافية المعمارية لحماية XSS (مهم للمطورين):</strong> لضمان عمل الأداة كملف `HTML` واحد محمول (Portable Single-File) ومستقل دون إنترنت، تم السماح بـ <code>unsafe-inline</code> في ترويسة سياسة الأمان (CSP). إذا أردت استضافة الأداة كخدمة عامة ذات أمان مطلق (Zero-Trust)، يرجى نقل الجافاسكربت لملف خارجي وتضمين الـ Hash الخاص به في الميتا تاج.</li>
+                    <li><strong>الشفافية المعمارية لحماية XSS (مهم للمطورين):</strong> لضمان عمل الأداة كملف `HTML` واحد محمول ومستقل دون إنترنت، تم السماح بـ <code>unsafe-inline</code> في ترويسة سياسة الأمان (CSP). إذا أردت استضافة الأداة كخدمة عامة ذات أمان مطلق، يرجى نقل الجافاسكربت لملف خارجي وتضمين الـ Hash الخاص به في الميتا تاج (راجع ترويسة الكود المصدري للتفاصيل).</li>
                     <li><strong>منع تسريب الـ Blob:</strong> الصور المستخرجة تُرسم مؤقتاً على <code>Canvas</code> ولا تُربط إطلاقاً كروابط حية في المتصفح، مما يجعل اختطافها مستحيلاً. وحتى الصور قبل التشفير يتم معالجتها عبر روابط مؤقتة يتم إبادتها.</li>
                     <li><strong>مولد أرقام حقيقي (No Modulo Bias):</strong> يتم توليد كلمات المرور عشوائياً باستخدام تقنية (Rejection Sampling) لضمان توزيع احتمالي متساوٍ وعادل للحروف.</li>
                 </ul>
@@ -517,8 +519,8 @@
         encFileInfo.innerHTML = `مرفق: <strong>${file.name}</strong> (${formatBytes(file.size)})`;
         encFileInfo.style.display = 'block';
         
-        // استخدام ObjectURL الآمن بدلاً من Base64
-        if (encImgPreview.src) URL.revokeObjectURL(encImgPreview.src);
+        // استخدام ObjectURL الآمن بدلاً من Base64، والتأكد من إلغاء الرابط السابق بشكل سليم
+        if (encImgPreview.src && encImgPreview.src.startsWith('blob:')) { URL.revokeObjectURL(encImgPreview.src); }
         encImgPreview.src = URL.createObjectURL(file);
         encImgPreviewBox.style.display = 'block';
         checkEncryptReady();
@@ -659,6 +661,7 @@
 
             finalPackage = new Uint8Array(33 + encryptedData.byteLength);
             finalPackage.set(header, 0);
+            // نقل البيانات للمصفوفة النهائية قبل تصفير المصدر (آمن لأن .set يقوم بنسخ القيم للمنطقة الجديدة)
             finalPackage.set(new Uint8Array(encryptedData), 33);
             
             secureZero(encryptedData); encryptedData = null;
@@ -739,6 +742,10 @@
             if (verifyOnly) {
                 showToast('✔️ الملف سليم ومفتاح التشفير صحيح! لم يتم العبث بالبيانات.');
                 secureZero(decryptedCombinedBuffer); decryptedCombinedBuffer = null;
+                
+                // إضافة مؤقت لحذف الملف من الذاكرة في الخلفية بعد 60 ثانية إذا تركه المستخدم
+                clearTimeout(wipeTimeout);
+                wipeTimeout = setTimeout(wipeMemory, 60000);
                 return;
             }
 
@@ -927,7 +934,11 @@
         const a = document.createElement('a');
         const url = URL.createObjectURL(blob);
         a.href = url; 
-        a.download = "Hisn_AirGapped_Secure.html"; 
+        
+        // تعمية اسم الملف للحماية من الفحص
+        const randomName = Array.from(crypto.getRandomValues(new Uint8Array(4))).map(b => b.toString(16).padStart(2,'0')).join('');
+        a.download = `offline_env_${randomName}.html`; 
+        
         a.click();
         setTimeout(() => URL.revokeObjectURL(url), 100);
         showToast('🛡️ تم استخراج نسخة نقية بنجاح للعمل بلا إنترنت');
