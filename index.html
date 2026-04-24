@@ -380,6 +380,9 @@
 <div class="toast" id="toast">تمت العملية!</div>
 
 <script>
+    // --- حماية XSS (يستخدم لتنظيف الأسماء المستخرجة) ---
+    const escHtml = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
     // --- فحص توافر بيئة التشفير والشبكة ---
     if (!window.crypto || !window.crypto.subtle) {
         document.getElementById('crypto-warning').style.display = 'block';
@@ -388,7 +391,12 @@
 
     function checkNetworkSilence() {
         if (window.performance && performance.getEntriesByType) {
-            const reqs = performance.getEntriesByType("resource").filter(r => !r.name.startsWith('data:') && !r.name.startsWith('blob:'));
+            const pageOrigin = location.origin;
+            const reqs = performance.getEntriesByType("resource").filter(r => 
+                !r.name.startsWith('data:') && 
+                !r.name.startsWith('blob:') &&
+                !r.name.startsWith(pageOrigin)
+            );
             if (reqs.length === 0) { document.getElementById('network-status').style.display = 'inline-flex'; }
             else { document.getElementById('network-status').style.display = 'none'; }
         }
@@ -516,7 +524,7 @@
         if (file.size > MAX_FILE_SIZE) return showToast(`الصورة ضخمة جداً! الحد الأقصى هو ${formatBytes(MAX_FILE_SIZE)}`, true);
         
         imageFile = file;
-        encFileInfo.innerHTML = `مرفق: <strong>${file.name}</strong> (${formatBytes(file.size)})`;
+        encFileInfo.innerHTML = `مرفق: <strong>${escHtml(file.name)}</strong> (${formatBytes(file.size)})`;
         encFileInfo.style.display = 'block';
         
         // استخدام ObjectURL الآمن بدلاً من Base64، والتأكد من إلغاء الرابط السابق بشكل سليم
@@ -537,14 +545,14 @@
     decFileInput.addEventListener('change', (e) => { if(e.target.files.length) handleDecFile(e.target.files[0]); });
 
     async function handleDecFile(file) {
-        decFileInfo.innerHTML = `القبو: <strong>${file.name}</strong> (${formatBytes(file.size)})`;
+        decFileInfo.innerHTML = `القبو: <strong>${escHtml(file.name)}</strong> (${formatBytes(file.size)})`;
         decFileInfo.style.display = 'block';
         try {
             if (decFileBuffer) secureZero(decFileBuffer);
             decFileBuffer = await file.arrayBuffer();
             checkDecryptReady();
             showToast('تم تحميل القبو للذاكرة، أدخل المفتاح.');
-        } catch(e) { showToast('خطأ فادح في قراءة الملف', true); }
+        } catch(e) { decFileBuffer = null; showToast('خطأ فادح في قراءة الملف', true); }
     }
 
     // --- الإنتروبيا (Entropy) ---
@@ -680,7 +688,7 @@
             a.download = `${randomName}.hisn`; 
             a.click();
             
-            setTimeout(() => URL.revokeObjectURL(url), 100);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
             showToast('✅ تم إنشاء القبو وتأمين بياناتك بنجاح!');
             
             pwdInput.value = '';
@@ -842,13 +850,14 @@
         let safeName = "Hisn_Decrypted_File";
         if(currentDecryptedMeta.name) {
             safeName = currentDecryptedMeta.name.replace(/[^a-zA-Z0-9.\-_ \u0600-\u06FF]/g, '');
+            safeName = safeName.replace(/\.{2,}/g, '.').replace(/^\./, '').trim() || 'Hisn_Decrypted_File';
         }
 
         const tempUrl = URL.createObjectURL(currentDecryptedBlob);
         const a = document.createElement('a');
         a.href = tempUrl; a.download = safeName; a.click();
         
-        setTimeout(() => URL.revokeObjectURL(tempUrl), 100);
+        setTimeout(() => URL.revokeObjectURL(tempUrl), 1000);
 
         showToast('💾 تم حفظ الملف بنجاح.. جاري إغلاق وتدمير القبو الآن!');
         setTimeout(wipeMemory, 300); 
@@ -940,7 +949,7 @@
         a.download = `offline_env_${randomName}.html`; 
         
         a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 100);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
         showToast('🛡️ تم استخراج نسخة نقية بنجاح للعمل بلا إنترنت');
     }
 </script>
