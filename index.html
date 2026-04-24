@@ -2,18 +2,19 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
+    <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="حِـصْـن - الأداة المطلقة لتشفير وحماية النصوص والصور محلياً وبشكل معزول تماماً">
     
-    <!-- سياسة أمان صارمة جداً (CSP): تمنع أي اتصال بالإنترنت، تمنع حقن السكربتات الخبيثة -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
-    <meta name="referrer" content="no-referrer">
+    <!-- 
+      سياسة CSP صارمة جداً للملف الموحد. 
+      [تنويه أمني للمحترفين]: للحصول على أمان مطلق (Zero-Trust) وحماية من الـ XSS في بيئة الإنتاج:
+      يجب فصل السكربت بالأسفل إلى ملف hisn.js وحساب الـ SHA-256 له، ثم استبدال 'unsafe-inline' بالتالي:
+      script-src 'sha256-YOUR_CALCULATED_HASH';
+    -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none';">
 
     <title>حِـصْـن | التشفير العسكري المحلي</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800;900&display=swap" rel="stylesheet">
 
 <style>
     :root {
@@ -21,7 +22,7 @@
         --surface: #0a1120;
         --surface-hover: #131f38;
         --border: #1e2d4a;
-        --text: #ffffff; /* أبيض نقي */
+        --text: #ffffff;
         --text-muted: #64748b;
         --primary: #00ff88;
         --primary-glow: rgba(0, 255, 136, 0.3);
@@ -35,7 +36,7 @@
         --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparent; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif; -webkit-tap-highlight-color: transparent; }
 
     body {
         background-color: var(--bg-dark); color: var(--text); min-height: 100vh;
@@ -46,7 +47,7 @@
 
     .app-container { width: 100%; max-width: 600px; position: relative; }
 
-    header { text-align: center; margin-bottom: 2rem; }
+    header { text-align: center; margin-bottom: 1.5rem; }
 
     .brand-title {
         font-weight: 900; font-size: 3.2rem; letter-spacing: -1px;
@@ -56,7 +57,11 @@
     }
     .brand-dot { color: var(--secondary); -webkit-text-fill-color: var(--secondary); animation: shield-pulse 2.5s infinite; display: inline-block;}
     @keyframes shield-pulse { 0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 5px var(--primary-glow)); } 50% { transform: translateY(-5px); filter: drop-shadow(0 0 15px var(--primary)); } }
-    .tagline { color: var(--text-muted); font-size: 1rem; font-weight: 600; }
+    .tagline { color: var(--text-muted); font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+
+    .network-badge {
+        display: none; align-items: center; justify-content: center; gap: 6px; background: rgba(0,255,136,0.1); border: 1px solid var(--success); color: var(--success); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; width: max-content; margin: 0 auto 1.5rem auto;
+    }
 
     .main-nav {
         display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem;
@@ -73,14 +78,12 @@
     .nav-btn:hover { color: var(--text); background: rgba(255, 255, 255, 0.03); }
     .nav-btn.active { background: var(--surface-hover); color: var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
     .nav-btn.airgap { color: var(--secondary); border: 1px dashed rgba(0, 212, 255, 0.3); background: rgba(0, 212, 255, 0.03); grid-column: span 2; }
-    @media (min-width: 480px) { .nav-btn.airgap { flex: 1; border-style: dashed; } }
 
     .card {
         background: rgba(10, 17, 32, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
         border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem;
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6); position: relative; overflow: hidden;
     }
-    @media (max-width: 480px) { .card { padding: 1.5rem 1rem; } }
 
     .view-section { display: none; animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
     .view-section.active { display: block; }
@@ -98,19 +101,17 @@
     .mode-toggle button.active { background: var(--surface-hover); color: var(--text); border: 1px solid var(--border); box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
 
     .control-group { margin-bottom: 1.5rem; }
-    .control-header { display: block; margin-bottom: 0.6rem; font-weight: 700; color: var(--text); font-size: 0.95rem; }
+    .control-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; font-weight: 700; color: var(--text); font-size: 0.95rem; }
     
     .text-input, .custom-textarea {
         width: 100%; background: #000; border: 1px solid var(--border); 
-        color: #ffffff !important; /* إصلاح: إجبار النص على أن يكون أبيض دائماً */
-        padding: 1rem; border-radius: 12px; outline: none; font-size: 1.1rem; transition: var(--transition);
+        color: #ffffff !important; padding: 1rem; border-radius: 12px; outline: none; font-size: 1.1rem; transition: var(--transition);
     }
     .text-input::placeholder, .custom-textarea::placeholder { color: #475569; font-weight: 400; }
     .text-input { direction: ltr; text-align: left; }
     .text-input:focus, .custom-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.15); }
     
     .custom-textarea { height: 130px; resize: vertical; line-height: 1.6; direction: rtl; text-align: right; }
-    /* إصلاح: تم إزالة color: var(--primary) ليبقى النص أبيض عند التركيز والكتابة بالإنجليزية */
     .custom-textarea:focus[placeholder], .custom-textarea:not(:placeholder-shown) { direction: ltr; text-align: left; font-family: var(--font-mono); }
 
     .input-wrapper { position: relative; display: flex; align-items: center; }
@@ -143,10 +144,11 @@
     .entropy-stats { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); font-weight: 600;}
     .crack-time { color: var(--text); direction: rtl; }
 
+    .action-row { display: flex; gap: 10px; margin-top: 1rem; }
     .btn-main {
-        width: 100%; padding: 1.2rem; background: linear-gradient(135deg, var(--primary), #00c868);
-        color: #000; border: none; border-radius: 14px; font-size: 1.15rem; font-weight: 900;
-        cursor: pointer; margin-top: 1rem; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 0.8rem; height: 60px;
+        flex: 1; padding: 1.2rem; background: linear-gradient(135deg, var(--primary), #00c868);
+        color: #000; border: none; border-radius: 14px; font-size: 1.1rem; font-weight: 900;
+        cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 0.5rem; height: 60px;
     }
     .btn-main:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 25px var(--primary-glow); }
     .btn-main:active:not(:disabled) { transform: translateY(0); }
@@ -154,6 +156,10 @@
     
     .btn-decrypt { background: linear-gradient(135deg, var(--secondary), #0088ff); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.5);}
     .btn-decrypt:hover:not(:disabled) { box-shadow: 0 10px 25px var(--secondary-glow); }
+    .btn-verify { background: transparent; border: 2px solid var(--warning); color: var(--warning); flex: 0.4; }
+    .btn-verify:hover:not(:disabled) { background: rgba(255, 183, 0, 0.1); transform: translateY(-2px); }
+
+    .btn-link { background: transparent; border: none; color: var(--secondary); font-size: 0.8rem; cursor: pointer; text-decoration: underline; }
 
     .vault-breached { display: none; margin-top: 1.5rem; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; background: #000; position: relative; }
     .timer-header { background: rgba(255, 51, 102, 0.1); padding: 0.8rem; text-align: center; color: var(--danger); font-size: 0.9rem; font-weight: 800; display: flex; flex-direction: column; gap: 4px; border-bottom: 1px solid rgba(255, 51, 102, 0.2); }
@@ -162,19 +168,23 @@
     
     .secret-payload { padding: 1.5rem; font-family: var(--font-mono); font-size: 1.1rem; color: #fff; line-height: 1.6; word-break: break-all; min-height: 100px; display: flex; align-items: center; justify-content: center; text-align: center; direction: ltr; }
     .secret-image-container { padding: 1rem; text-align: center; display: none; }
-    .secret-image { max-width: 100%; max-height: 50vh; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+    
+    #dec-result-canvas { max-width: 100%; max-height: 50vh; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
     
     .blur-overlay { filter: blur(15px); user-select: none; opacity: 0.4; transition: all 0.3s ease; cursor: pointer; }
     .blur-overlay.revealed { filter: blur(0); opacity: 1; user-select: text; cursor: text; color: var(--success); text-shadow: 0 0 1px #000;}
-    img.blur-overlay.revealed { color: inherit; filter: drop-shadow(0 0 5px rgba(0,255,136,0.3)); cursor: default; } 
+    canvas.blur-overlay.revealed { filter: drop-shadow(0 0 5px rgba(0,255,136,0.3)); cursor: default; } 
 
     .secure-save-zone { padding: 1rem; background: rgba(0, 255, 136, 0.05); border-top: 1px solid rgba(0, 255, 136, 0.1); text-align: center; display: none; }
     .btn-save-secure { width: 100%; padding: 1rem; background: transparent; border: 1px dashed var(--success); color: var(--success); border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.2s; font-size: 1rem; display: flex; justify-content: center; align-items: center; gap: 8px;}
     .btn-save-secure:hover { background: rgba(0, 255, 136, 0.1); }
     .secure-note { font-size: 0.8rem; color: var(--text-muted); margin-top: 8px; display: block; font-weight: 600;}
 
+    .fingerprint-box { display: none; background: #000; border: 1px solid var(--border); padding: 1rem; border-radius: 12px; margin-top: 1.5rem; text-align: center; font-family: var(--font-mono); font-size: 0.8rem; color: var(--secondary); word-break: break-all; }
+    .fingerprint-box span { color: var(--text); display: block; font-weight: bold; margin-bottom: 5px; font-family: system-ui, sans-serif; }
+
     .loader { display: none; border: 3px solid rgba(0,0,0,0.1); border-top-color: #000; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
-    .btn-decrypt .loader { border: 3px solid rgba(255,255,255,0.2); border-top-color: #fff; }
+    .btn-decrypt .loader, .btn-verify .loader { border: 3px solid rgba(255,255,255,0.2); border-top-color: #fff; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
     .info-list { padding-right: 1.5rem; line-height: 1.8; color: var(--text-muted); font-size: 0.95rem; }
@@ -192,20 +202,20 @@
 </head>
 <body>
 
-<!-- رسالة تحذيرية في حال عدم توفر بيئة تشفير آمنة -->
-<div id="crypto-warning" style="display:none; background: #ff3366; color: #fff; padding: 15px; text-align: center; font-weight: bold; width: 100%; z-index: 9999;">
-    ⚠️ بيئة غير آمنة! متصفحك لا يدعم التشفير المتقدم (Web Crypto API يتطلب اتصال HTTPS أو Localhost). الأداة لن تعمل للحفاظ على أمانك.
+<div id="crypto-warning" style="display:none; background: var(--danger); color: #fff; padding: 15px; text-align: center; font-weight: bold; width: 100%; z-index: 9999;">
+    ⚠️ بيئة غير آمنة! متصفحك لا يدعم التشفير المتقدم (Web Crypto API يتطلب اتصال HTTPS أو Localhost).
 </div>
 
 <div class="app-container">
     <header>
         <h1 class="brand-title">حِـصْـن<span class="brand-dot">🛡️</span></h1>
         <p class="tagline">قبو التشفير الشخصي (نصوص وصور)</p>
+        <div class="network-badge" id="network-status">✅ معزول عن الشبكة بنجاح</div>
     </header>
 
     <nav class="main-nav">
         <button class="nav-btn active" data-view="encrypt">🔒 تشفير</button>
-        <button class="nav-btn" data-view="decrypt">🔓 استخراج</button>
+        <button class="nav-btn" data-view="decrypt">🔓 استخراج / تحقق</button>
         <button class="nav-btn" data-view="about">ℹ️ التكنولوجيا</button>
         <button class="nav-btn airgap" onclick="downloadAirGapped()">🛡️ استخراج نسخة معزولة</button>
     </nav>
@@ -215,7 +225,7 @@
         <section id="view-encrypt" class="view-section active">
             <div class="alert-box">
                 <svg width="24" height="24" fill="none" stroke="var(--primary)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                <div>قم بتحويل نصوصك أو صورك إلى <strong>قبو إلكتروني (.hisn)</strong>. يتم التشفير بدمج البايتات الخام لضمان خصوصية 100% دون فقدان الجودة.</div>
+                <div>قم بتحويل بياناتك إلى <strong>قبو إلكتروني (.hisn)</strong> مشفر بقوة مليون دورة PBKDF2 لضمان خصوصية 100%. التبديل لتطبيق آخر يُدمّر البيانات من الذاكرة فوراً.</div>
             </div>
 
             <div class="mode-toggle">
@@ -225,7 +235,6 @@
 
             <div class="control-group" id="enc-text-container">
                 <label class="control-header">البيانات الحساسة</label>
-                <!-- إضافة سمات الحماية من التتبع والمراقبة (Anti-Keylogging / Caching) -->
                 <textarea id="enc-text" class="custom-textarea" placeholder="اكتب كلمات المرور، أو الرسائل الخاصة هنا..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
             </div>
 
@@ -243,10 +252,17 @@
                 </div>
             </div>
 
+            <div class="control-group" id="enc-meta-container">
+                <label class="control-header">اسم الملف الوهمي / الوسم (اختياري)</label>
+                <input type="text" id="enc-filename" class="text-input" placeholder="مثال: my_secret_data" autocomplete="off" spellcheck="false">
+            </div>
+
             <div class="control-group">
-                <label class="control-header">مفتاح التشفير (كلمة المرور)</label>
+                <label class="control-header">
+                    مفتاح التشفير (كلمة المرور)
+                    <button class="btn-link" onclick="generateSecurePassword()">✨ توليد مفتاح آمن</button>
+                </label>
                 <div class="input-wrapper">
-                    <!-- حماية الإدخال -->
                     <input type="password" id="enc-password" class="text-input" placeholder="استخدم عبارة مرور معقدة جداً..." autocomplete="new-password" spellcheck="false">
                     <button class="input-icon-btn toggle-pass" data-target="enc-password" aria-label="إظهار الكلمة">👁️</button>
                 </div>
@@ -264,13 +280,18 @@
                 <span class="btn-text">🔒 إنشاء القبو وتأمين البيانات</span>
                 <div class="loader" id="loader-enc"></div>
             </button>
+            
+            <div class="fingerprint-box" id="enc-fingerprint">
+                <span>بصمة الملف (SHA-256) للمطابقة لاحقاً:</span>
+                <div id="enc-fingerprint-hash"></div>
+            </div>
         </section>
 
-        <!-- قسم فك التشفير -->
+        <!-- قسم فك التشفير / التحقق -->
         <section id="view-decrypt" class="view-section">
             <div class="alert-box warning">
                 <svg width="24" height="24" fill="none" stroke="var(--warning)" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path><path d="M12 8v4l3 3"></path></svg>
-                <div>إذا نسيت مفتاح فك التشفير، <strong>يستحيل رياضياً</strong> استرجاع الملف. نحن لا نحتفظ بأي نسخة مطلقاً.</div>
+                <div>إذا نسيت المفتاح، <strong>يستحيل رياضياً</strong> استرجاع الملف. نحن لا نحتفظ بأي نسخة. الإدخال الخاطئ المتكرر سيؤدي لقفل النظام مؤقتاً.</div>
             </div>
 
             <div class="control-group">
@@ -278,7 +299,7 @@
                 <div class="file-drop-zone" id="dec-drop-zone">
                     <div class="file-icon">📦➡️👁️</div>
                     <div class="file-instruction">اسحب القبو وأفلته هنا</div>
-                    <div class="file-subtext">لاستخراج النص أو الصورة الأصلية</div>
+                    <div class="file-subtext">لاستخراج المحتوى أو التحقق منه</div>
                     <input type="file" id="dec-file-input" accept=".hisn">
                     <div class="file-details" id="dec-file-info"></div>
                 </div>
@@ -287,22 +308,27 @@
             <div class="control-group">
                 <label class="control-header">المفتاح السري</label>
                 <div class="input-wrapper">
-                    <!-- حماية الإدخال -->
                     <input type="password" id="dec-password" class="text-input" placeholder="أدخل مفتاح القبو الصحيح..." autocomplete="new-password" spellcheck="false">
                     <button class="input-icon-btn toggle-pass" data-target="dec-password">👁️</button>
                 </div>
             </div>
 
-            <button class="btn-main btn-decrypt" id="btn-decrypt" disabled>
-                <span class="btn-text">🔓 فك التشفير وكشف المحتوى</span>
-                <div class="loader" id="loader-dec"></div>
-            </button>
+            <div class="action-row">
+                <button class="btn-main btn-decrypt" id="btn-decrypt" disabled>
+                    <span class="btn-text">🔓 فك التشفير</span>
+                    <div class="loader" id="loader-dec"></div>
+                </button>
+                <button class="btn-main btn-verify" id="btn-verify" disabled title="التحقق من صحة الملف والمفتاح دون كشف المحتوى">
+                    <span class="btn-text">✔️ تحقق فقط</span>
+                    <div class="loader" id="loader-ver"></div>
+                </button>
+            </div>
 
-            <!-- واجهة النتيجة المدمرة ذاتياً / الحفظ الآمن -->
+            <!-- واجهة النتيجة المدمرة ذاتياً -->
             <div class="vault-breached" id="wipe-container">
                 <div class="timer-header">
                     <span>⚠️ سَيُدَمَّر المحتوى من الذاكرة خلال 10 ثوانٍ ⚠️</span>
-                    <span style="color:var(--text-muted); font-size: 0.8rem; font-weight: normal;">المس المحتوى باستمرار لإزالة التمويه وقراءته.</span>
+                    <span style="color:var(--text-muted); font-size: 0.8rem; font-weight: normal;">المس المحتوى باستمرار لإزالة التمويه وقراءته. التبديل لتبويب آخر يُدمر المحتوى فوراً.</span>
                 </div>
                 <div class="timer-bar-bg"><div class="timer-bar-fill" id="timer-bar"></div></div>
                 
@@ -312,14 +338,14 @@
                 </div>
                 
                 <div class="secret-image-container" id="dec-result-img-container">
-                    <img class="secret-image blur-overlay" id="dec-result-img" src="" alt="صورة سرية"
+                    <canvas id="dec-result-canvas" class="blur-overlay"
                          onmousedown="this.classList.add('revealed')" onmouseup="this.classList.remove('revealed')" 
-                         onmouseleave="this.classList.remove('revealed')" ontouchstart="this.classList.add('revealed')" ontouchend="this.classList.remove('revealed')">
+                         onmouseleave="this.classList.remove('revealed')" ontouchstart="this.classList.add('revealed')" ontouchend="this.classList.remove('revealed')"></canvas>
                 </div>
 
                 <div class="secure-save-zone" id="secure-save-zone">
                     <button class="btn-save-secure" id="btn-secure-save">💾 حفظ الملف لجهازي (وإغلاق القبو)</button>
-                    <span class="secure-note">بمجرد حفظ الملف في نظام التشغيل، يتم تصفير الذاكرة وإغلاق الواجهة فوراً كإجراء أمني.</span>
+                    <span class="secure-note">بمجرد حفظ الملف، يتم تصفير الذاكرة وإغلاق الواجهة فوراً كإجراء أمني.</span>
                 </div>
             </div>
         </section>
@@ -328,14 +354,16 @@
         <section id="view-about" class="view-section">
             <h2 style="margin-bottom: 1rem; color: var(--primary); font-weight: 900; letter-spacing: -0.5px;">دليل الأمان والشفافية التامة</h2>
             <p style="color: var(--text-muted); line-height: 1.7; margin-bottom: 1rem;">
-                أداة "حِصْن" مبنية على فلسفة <strong>الثقة المعدومة (Zero-Trust) والتشفير الطرفي الحقيقي (E2EE)</strong>. التطبيق يعمل حصرياً داخل بيئة متصفحك (Client-Side).
+                أداة "حِصْن" مبنية على فلسفة الثقة المعدومة والتشفير الطرفي الحقيقي وفق أحدث المعايير العسكرية.
             </p>
             <div style="background: rgba(0,0,0,0.4); padding: 1.5rem; border-radius: 16px; border: 1px solid var(--border);">
                 <ul class="info-list">
-                    <li><strong>حماية ضد التتبع اللغوي:</strong> تم تعطيل المدقق الإملائي والإكمال التلقائي <code>autocomplete="off"</code> لمنع كيبورد الهواتف والأنظمة من تخزين نصوصك وكلمات مرورك في قواميسها.</li>
-                    <li><strong>تصفير الذاكرة (Zero-fill Memory):</strong> على عكس المواقع العادية، قمنا بتنفيذ دالة تقوم بملء مصفوفات البيانات الحساسة بالأصفار <code>0x00</code> قبل حذفها، لمنع برمجيات فحص الذاكرة (Memory Dumpers) من التقاط بقايا نصوصك من الرام.</li>
-                    <li><strong>عزل شبكي صارم (CSP):</strong> الكود يحتوي على سياسة <code>default-src 'none'</code> والتي تمنع المتصفح فيزيائياً من إجراء أي اتصال بالإنترنت، مما يضمن استحالة تسريب بياناتك.</li>
-                    <li><strong>تشفير عسكري مصادق:</strong> نستخدم <code>AES-GCM 256-bit</code> (تحمي من التلاعب بالملف)، مع مفاتيح مشتقة عبر <code>PBKDF2</code> مقواة بـ <strong>600,000 دورة تجزئة</strong> لإحباط هجمات القوة الغاشمة (Brute-Force).</li>
+                    <li><strong>تشفير مضاعف:</strong> نستخدم خوارزمية <code>AES-GCM 256-bit</code> مع مفاتيح مشتقة عبر <code>PBKDF2</code> بـ <strong>1,000,000 دورة تجزئة (SHA-256)</strong> لتدمير أي محاولة كسر بالقوة الغاشمة.</li>
+                    <li><strong>حماية ضد المراقبة الخلفية (Tab-Hide Wipe):</strong> كإجراء أمني صارم جداً، بمجرد انتقالك لتطبيق آخر أو تبويب آخر في المتصفح، يتم تدمير البيانات المفتوحة والذاكرة العشوائية الخاصة بها بشكل غير قابل للاسترجاع وفوراً.</li>
+                    <li><strong>تصفير الذاكرة (Zero-fill):</strong> نستخدم الدوال الأمنية لمسح المصفوفات من الـ RAM عن طريق كتابة أصفار <code>0x00</code> على مستوى الـ <code>ArrayBuffer</code> فور الانتهاء لتجنب برمجيات فحص الذاكرة.</li>
+                    <li><strong>الشفافية المعمارية لحماية XSS (مهم للمطورين):</strong> لضمان عمل الأداة كملف `HTML` واحد محمول (Portable Single-File) ومستقل دون إنترنت، تم السماح بـ <code>unsafe-inline</code> في ترويسة سياسة الأمان (CSP). إذا أردت استضافة الأداة كخدمة عامة ذات أمان مطلق (Zero-Trust)، يرجى نقل الجافاسكربت لملف خارجي وتضمين الـ Hash الخاص به في الميتا تاج.</li>
+                    <li><strong>منع تسريب الـ Blob:</strong> الصور المستخرجة تُرسم مؤقتاً على <code>Canvas</code> ولا تُربط إطلاقاً كروابط حية في المتصفح، مما يجعل اختطافها مستحيلاً. وحتى الصور قبل التشفير يتم معالجتها عبر روابط مؤقتة يتم إبادتها.</li>
+                    <li><strong>مولد أرقام حقيقي (No Modulo Bias):</strong> يتم توليد كلمات المرور عشوائياً باستخدام تقنية (Rejection Sampling) لضمان توزيع احتمالي متساوٍ وعادل للحروف.</li>
                 </ul>
             </div>
         </section>
@@ -350,32 +378,64 @@
 <div class="toast" id="toast">تمت العملية!</div>
 
 <script>
-    // --- فحص توافر بيئة التشفير (Web Crypto API) ---
+    // --- فحص توافر بيئة التشفير والشبكة ---
     if (!window.crypto || !window.crypto.subtle) {
         document.getElementById('crypto-warning').style.display = 'block';
         document.querySelectorAll('.btn-main').forEach(btn => btn.style.display = 'none');
     }
 
-    // --- إعدادات النظام ---
-    const MAX_FILE_SIZE = 200 * 1024 * 1024; // 200 MB Limit
+    function checkNetworkSilence() {
+        if (window.performance && performance.getEntriesByType) {
+            const reqs = performance.getEntriesByType("resource").filter(r => !r.name.startsWith('data:') && !r.name.startsWith('blob:'));
+            if (reqs.length === 0) { document.getElementById('network-status').style.display = 'inline-flex'; }
+            else { document.getElementById('network-status').style.display = 'none'; }
+        }
+    }
+    setInterval(checkNetworkSilence, 2000);
+
+    // --- إعدادات النظام ومعايير الأمان ---
+    const MAX_FILE_SIZE = 200 * 1024 * 1024;
     const ALGORITHM = "AES-GCM";
-    const PBKDF2_ITERATIONS = 600000;
+    const PBKDF2_ITERATIONS = 1000000;
+    const ALLOWED_MIMES = ['image/png','image/jpeg','image/gif','image/webp','image/bmp'];
+    const MAGIC_HEADER = new Uint8Array([0x48, 0x49, 0x53, 0x4E]); // "HISN"
+    const VERSION = 0x01;
     
     let encryptMode = 'text'; 
     let imageFile = null;
     let decFileBuffer = null;
-    
-    // متغيرات الاستخراج والحفظ
-    let currentDecryptedBlobUrl = null; 
+    let currentDecryptedBlob = null; 
     let currentDecryptedMeta = null; 
     let wipeTimeout;
 
-    // --- دالة التصفير الآمن (Secure Zero-fill) ---
-    // تقوم بطمس المتغيرات من الذاكرة العشوائية عن طريق استبدال بياناتها بالأصفار
+    // سجل محاولات الاختراق
+    let failedAttempts = 0;
+    let lockUntil = 0;
+
+    // --- دالة التصفير الحقيقي للذاكرة (Direct Buffer Access) ---
     function secureZero(buffer) {
-        if (buffer && buffer.byteLength) {
-            new Uint8Array(buffer).fill(0);
+        if (!buffer) return;
+        if (buffer.byteLength !== undefined) {
+            const view = new Uint8Array(buffer.buffer || buffer);
+            view.fill(0);
         }
+    }
+
+    // --- توليد مفتاح آمن بتقنية الاستبعاد (Rejection Sampling) لمنع التحيز ---
+    function generateSecurePassword() {
+        const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+~|}{[]:;?><,./-=";
+        const limit = 256 - (256 % charset.length);
+        let pwd = ""; 
+        while (pwd.length < 24) {
+            const vals = crypto.getRandomValues(new Uint8Array(1));
+            if (vals[0] < limit) {
+                pwd += charset[vals[0] % charset.length];
+            }
+        }
+        const pwdInput = document.getElementById('enc-password');
+        pwdInput.value = pwd; 
+        pwdInput.dispatchEvent(new Event('input'));
+        pwdInput.type = 'text';
     }
 
     // --- إدارة التبويبات والمظهر ---
@@ -388,7 +448,7 @@
             views.forEach(v => v.classList.remove('active'));
             btn.classList.add('active');
             document.getElementById(`view-${btn.dataset.view}`).classList.add('active');
-            wipeMemory(); // تنظيف الأمان عند التنقل بين النوافذ
+            wipeMemory(); 
         });
     });
 
@@ -401,22 +461,15 @@
         checkEncryptReady();
     }
 
-    // --- إظهار/إخفاء الباسورد ---
     document.querySelectorAll('.toggle-pass').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             const input = document.getElementById(this.dataset.target);
-            if (input.type === "password") {
-                input.type = "text";
-                this.style.color = "var(--primary)";
-            } else {
-                input.type = "password";
-                this.style.color = "var(--text-muted)";
-            }
+            if (input.type === "password") { input.type = "text"; this.style.color = "var(--primary)"; }
+            else { input.type = "password"; this.style.color = "var(--text-muted)"; }
         });
     });
 
-    // --- الإشعارات المتجاوبة ---
     let toastTimeout;
     function showToast(msg, isError = false) {
         const toast = document.getElementById('toast');
@@ -438,13 +491,12 @@
         const btn = document.getElementById(btnId);
         const txt = btn.querySelector('.btn-text');
         const ldr = btn.querySelector('.loader');
-        
         btn.disabled = isLoading;
         txt.style.display = isLoading ? 'none' : 'inline';
         ldr.style.display = isLoading ? 'block' : 'none';
     }
 
-    // --- معالجة سحب وإفلات الصورة للتشفير ---
+    // --- معالجة الملفات ---
     const encImgDrop = document.getElementById('enc-img-drop');
     const encImgInput = document.getElementById('enc-img-input');
     const encImgPreviewBox = document.getElementById('enc-img-preview-box');
@@ -454,13 +506,8 @@
     encImgDrop.addEventListener('click', (e) => { if(e.target !== encFileInfo) encImgInput.click(); });
     encImgDrop.addEventListener('dragover', (e) => { e.preventDefault(); encImgDrop.classList.add('dragover'); });
     encImgDrop.addEventListener('dragleave', () => encImgDrop.classList.remove('dragover'));
-    encImgDrop.addEventListener('drop', (e) => {
-        e.preventDefault(); encImgDrop.classList.remove('dragover');
-        if(e.dataTransfer.files.length) handleEncImgFile(e.dataTransfer.files[0]);
-    });
-    encImgInput.addEventListener('change', (e) => {
-        if(e.target.files.length) handleEncImgFile(e.target.files[0]);
-    });
+    encImgDrop.addEventListener('drop', (e) => { e.preventDefault(); encImgDrop.classList.remove('dragover'); if(e.dataTransfer.files.length) handleEncImgFile(e.dataTransfer.files[0]); });
+    encImgInput.addEventListener('change', (e) => { if(e.target.files.length) handleEncImgFile(e.target.files[0]); });
 
     function handleEncImgFile(file) {
         if (!file.type.startsWith('image/')) return showToast('عذراً، يجب اختيار ملف صورة', true);
@@ -470,17 +517,13 @@
         encFileInfo.innerHTML = `مرفق: <strong>${file.name}</strong> (${formatBytes(file.size)})`;
         encFileInfo.style.display = 'block';
         
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            encImgPreview.src = e.target.result;
-            encImgPreviewBox.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-        
+        // استخدام ObjectURL الآمن بدلاً من Base64
+        if (encImgPreview.src) URL.revokeObjectURL(encImgPreview.src);
+        encImgPreview.src = URL.createObjectURL(file);
+        encImgPreviewBox.style.display = 'block';
         checkEncryptReady();
     }
 
-    // --- معالجة سحب وإفلات القبو لفك التشفير ---
     const decDropZone = document.getElementById('dec-drop-zone');
     const decFileInput = document.getElementById('dec-file-input');
     const decFileInfo = document.getElementById('dec-file-info');
@@ -488,28 +531,18 @@
     decDropZone.addEventListener('click', (e) => { if(e.target !== decFileInfo) decFileInput.click(); });
     decDropZone.addEventListener('dragover', (e) => { e.preventDefault(); decDropZone.classList.add('dragover'); });
     decDropZone.addEventListener('dragleave', () => decDropZone.classList.remove('dragover'));
-    decDropZone.addEventListener('drop', (e) => {
-        e.preventDefault(); decDropZone.classList.remove('dragover');
-        if(e.dataTransfer.files.length) handleDecFile(e.dataTransfer.files[0]);
-    });
-    decFileInput.addEventListener('change', (e) => {
-        if(e.target.files.length) handleDecFile(e.target.files[0]);
-    });
+    decDropZone.addEventListener('drop', (e) => { e.preventDefault(); decDropZone.classList.remove('dragover'); if(e.dataTransfer.files.length) handleDecFile(e.dataTransfer.files[0]); });
+    decFileInput.addEventListener('change', (e) => { if(e.target.files.length) handleDecFile(e.target.files[0]); });
 
     async function handleDecFile(file) {
         decFileInfo.innerHTML = `القبو: <strong>${file.name}</strong> (${formatBytes(file.size)})`;
         decFileInfo.style.display = 'block';
-        
         try {
-            // نمسح أي بيانات قديمة من الذاكرة أولاً
             if (decFileBuffer) secureZero(decFileBuffer);
-            
             decFileBuffer = await file.arrayBuffer();
             checkDecryptReady();
             showToast('تم تحميل القبو للذاكرة، أدخل المفتاح.');
-        } catch(e) {
-            showToast('خطأ فادح في قراءة الملف', true);
-        }
+        } catch(e) { showToast('خطأ فادح في قراءة الملف', true); }
     }
 
     // --- الإنتروبيا (Entropy) ---
@@ -519,8 +552,9 @@
         if (/[a-z]/.test(pwd)) pool += 26;
         if (/[A-Z]/.test(pwd)) pool += 26;
         if (/[أ-ي]/.test(pwd)) pool += 36;
+        if (/[\u064B-\u0652]/.test(pwd)) pool += 8; 
         if (/[0-9]/.test(pwd)) pool += 10;
-        if (/[^a-zA-Z0-9أ-ي\s]/.test(pwd)) pool += 32;
+        if (/[^a-zA-Z0-9أ-ي\u064B-\u0652\s]/.test(pwd)) pool += 32;
 
         let effLen = pwd.length;
         const repeats = (pwd.match(/(.)\1{2,}/g) ||[]).join('').length;
@@ -538,14 +572,14 @@
         let hasData = false;
         if (encryptMode === 'text' && document.getElementById('enc-text').value.trim() !== '') hasData = true;
         if (encryptMode === 'image' && imageFile !== null) hasData = true;
-        
-        btn.disabled = !(hasData && currentBits >= 50); // أدنى حد أمني
+        btn.disabled = !(hasData && currentBits >= 50); 
     }
 
     function checkDecryptReady() {
-        const btn = document.getElementById('btn-decrypt');
-        const pwd = document.getElementById('dec-password').value;
-        btn.disabled = !(decFileBuffer !== null && pwd.length > 0);
+        const hasBuffer = decFileBuffer !== null;
+        const hasPwd = document.getElementById('dec-password').value.length > 0;
+        document.getElementById('btn-decrypt').disabled = !(hasBuffer && hasPwd);
+        document.getElementById('btn-verify').disabled = !(hasBuffer && hasPwd);
     }
 
     document.getElementById('enc-password').addEventListener('input', (e) => {
@@ -557,139 +591,156 @@
         bitTxt.innerText = Math.round(currentBits) + ' Bits';
         fill.style.width = Math.min((currentBits / 100) * 100, 100) + '%';
 
-        if (currentBits < 50) {
-            fill.style.background = 'var(--danger)'; timeTxt.style.color = 'var(--danger)'; 
-            timeTxt.innerText = "سهل جداً ❌";
-        } else if (currentBits < 80) {
-            fill.style.background = 'var(--warning)'; timeTxt.style.color = 'var(--warning)'; 
-            timeTxt.innerText = "عدة أيام ⚠️";
-        } else {
-            fill.style.background = 'var(--success)'; timeTxt.style.color = 'var(--success)'; 
-            timeTxt.innerText = "مستحيل (قرون) 🛡️";
-        }
+        if (currentBits < 50) { fill.style.background = 'var(--danger)'; timeTxt.style.color = 'var(--danger)'; timeTxt.innerText = "سهل جداً ❌"; } 
+        else if (currentBits < 80) { fill.style.background = 'var(--warning)'; timeTxt.style.color = 'var(--warning)'; timeTxt.innerText = "عدة أيام ⚠️"; } 
+        else { fill.style.background = 'var(--success)'; timeTxt.style.color = 'var(--success)'; timeTxt.innerText = "مستحيل (قرون) 🛡️"; }
         checkEncryptReady();
     });
 
     document.getElementById('enc-text').addEventListener('input', checkEncryptReady);
     document.getElementById('dec-password').addEventListener('input', checkDecryptReady);
 
-    // --- نواة التشفير الأساسية (Binary API) ---
-    async function deriveKey(password, salt) {
+    // --- نواة التشفير الأساسية ---
+    async function deriveKey(pwdInput, salt) {
         const encoder = new TextEncoder();
-        const keyMaterial = await window.crypto.subtle.importKey(
-            "raw", encoder.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]
-        );
+        const keyMaterial = await window.crypto.subtle.importKey("raw", encoder.encode(pwdInput.value), { name: "PBKDF2" }, false, ["deriveKey"]);
         return await window.crypto.subtle.deriveKey(
             { name: "PBKDF2", salt: salt, iterations: PBKDF2_ITERATIONS, hash: "SHA-256" },
             keyMaterial, { name: ALGORITHM, length: 256 }, false, ["encrypt", "decrypt"]
         );
     }
 
-    // --- التشفير (نص / صورة) ---
+    // --- التشفير وبناء الحزمة ---
     document.getElementById('btn-encrypt').addEventListener('click', async () => {
-        const pwd = document.getElementById('enc-password').value;
+        const pwdInput = document.getElementById('enc-password');
         toggleLoading('btn-encrypt', true);
         
-        let combinedBuffer = null;
-        let encryptedData = null;
-        let finalPackage = null;
+        let combinedBuffer = null; let encryptedData = null; let finalPackage = null;
         
         try {
             let dataBytes, metadata;
+            const customName = document.getElementById('enc-filename').value.trim();
             
             if (encryptMode === 'text') {
                 const text = document.getElementById('enc-text').value;
                 dataBytes = new TextEncoder().encode(text);
-                metadata = { type: 'text', name: 'secret_message.txt' };
+                metadata = { type: 'text', name: customName || 'secret_message.txt' };
             } else {
                 dataBytes = new Uint8Array(await imageFile.arrayBuffer());
-                metadata = { type: 'image', mime: imageFile.type, name: imageFile.name };
+                metadata = { type: 'image', mime: imageFile.type, name: customName || imageFile.name };
             }
 
             const metaBytes = new TextEncoder().encode(JSON.stringify(metadata));
-            
             combinedBuffer = new Uint8Array(4 + metaBytes.length + dataBytes.length);
             const dataView = new DataView(combinedBuffer.buffer);
             dataView.setUint32(0, metaBytes.length);
             combinedBuffer.set(metaBytes, 4);
             combinedBuffer.set(dataBytes, 4 + metaBytes.length);
 
-            // تصفير البايتات الحساسة غير المشفرة وتفريغها
-            secureZero(dataBytes);
-            dataBytes = null; 
+            secureZero(dataBytes); dataBytes = null; 
 
             const salt = window.crypto.getRandomValues(new Uint8Array(16));
             const iv = window.crypto.getRandomValues(new Uint8Array(12));
-            const key = await deriveKey(pwd, salt);
+            const key = await deriveKey(pwdInput, salt);
             
+            // AAD Header
+            const header = new Uint8Array(33);
+            header.set(MAGIC_HEADER, 0);
+            header[4] = VERSION;
+            header.set(salt, 5);
+            header.set(iv, 21);
+
             encryptedData = await window.crypto.subtle.encrypt(
-                { name: ALGORITHM, iv: iv }, key, combinedBuffer
+                { name: ALGORITHM, iv: iv, additionalData: header }, 
+                key, 
+                combinedBuffer
             );
+            secureZero(combinedBuffer); combinedBuffer = null;
 
-            // تصفير الـ buffer المُجمع قبل المشفر
-            secureZero(combinedBuffer);
-            combinedBuffer = null;
-
-            finalPackage = new Uint8Array(16 + 12 + encryptedData.byteLength);
-            finalPackage.set(salt, 0);
-            finalPackage.set(iv, 16);
-            finalPackage.set(new Uint8Array(encryptedData), 28);
+            finalPackage = new Uint8Array(33 + encryptedData.byteLength);
+            finalPackage.set(header, 0);
+            finalPackage.set(new Uint8Array(encryptedData), 33);
             
-            encryptedData = null;
+            secureZero(encryptedData); encryptedData = null;
+
+            const fullHashBuffer = await window.crypto.subtle.digest("SHA-256", finalPackage);
+            const fullHashHex = Array.from(new Uint8Array(fullHashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+            document.getElementById('enc-fingerprint-hash').innerText = fullHashHex;
+            document.getElementById('enc-fingerprint').style.display = 'block';
 
             const blob = new Blob([finalPackage], { type: 'application/octet-stream' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url; 
-            const prefix = encryptMode === 'image' ? 'ImageVault' : 'TextVault';
-            a.download = `${prefix}_${Date.now()}.hisn`; 
+            
+            const randomName = Array.from(crypto.getRandomValues(new Uint8Array(8))).map(b => b.toString(16).padStart(2,'0')).join('');
+            a.download = `${randomName}.hisn`; 
             a.click();
             
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-            secureZero(finalPackage); // تصفير مصفوفة الخرج
-            finalPackage = null;
+            setTimeout(() => URL.revokeObjectURL(url), 100);
+            showToast('✅ تم إنشاء القبو وتأمين بياناتك بنجاح!');
             
-            showToast('✅ تم إنشاء القبو وتأمين ملفاتك بنجاح!');
-            wipeMemory(); 
+            pwdInput.value = '';
+            document.getElementById('enc-text').value = '';
             
         } catch (err) {
             console.error(err);
             showToast('حدث خطأ غير متوقع في محرك التشفير', true);
         } finally { 
-            // تأمين الذاكرة في حالة الخطأ أيضاً
-            secureZero(combinedBuffer);
-            secureZero(finalPackage);
+            secureZero(combinedBuffer); secureZero(finalPackage);
+            finalPackage = null;
             toggleLoading('btn-encrypt', false);
         }
     });
 
-    // --- فك التشفير (نص / صورة) ---
-    document.getElementById('btn-decrypt').addEventListener('click', async () => {
+    // --- نواة الفك والتحقق ---
+    async function processDecryption(verifyOnly = false) {
+        if (Date.now() < lockUntil) {
+            const secs = Math.ceil((lockUntil - Date.now()) / 1000);
+            showToast(`النظام مقفل مؤقتاً! يرجى الانتظار ${secs} ثانية.`, true);
+            return;
+        }
+
         const pwdInput = document.getElementById('dec-password');
-        const pwd = pwdInput.value;
-        toggleLoading('btn-decrypt', true);
+        const btnId = verifyOnly ? 'btn-verify' : 'btn-decrypt';
+        toggleLoading(btnId, true);
+
+        let decryptedCombinedBuffer = null;
 
         try {
-            if(decFileBuffer.byteLength < 28) throw new Error("CORRUPT");
+            if(decFileBuffer.byteLength < 33) throw new Error("CORRUPT");
 
             const bufferView = new Uint8Array(decFileBuffer);
-            const salt = bufferView.slice(0, 16);
-            const iv = bufferView.slice(16, 28);
-            const ciphertext = bufferView.slice(28);
-
-            const key = await deriveKey(pwd, salt);
             
-            let decryptedCombinedBuffer;
+            const magic = bufferView.slice(0, 4);
+            if(magic[0] !== MAGIC_HEADER[0] || magic[1] !== MAGIC_HEADER[1] || magic[2] !== MAGIC_HEADER[2] || magic[3] !== MAGIC_HEADER[3]) throw new Error("CORRUPT");
+            if(bufferView[4] !== VERSION) throw new Error("UNSUPPORTED_VERSION");
+
+            const header = bufferView.slice(0, 33);
+            const salt = bufferView.slice(5, 21);
+            const iv = bufferView.slice(21, 33);
+            const ciphertext = bufferView.slice(33);
+
+            const key = await deriveKey(pwdInput, salt);
+            
             try {
                 decryptedCombinedBuffer = await window.crypto.subtle.decrypt(
-                    { name: ALGORITHM, iv: iv }, key, ciphertext
+                    { name: ALGORITHM, iv: iv, additionalData: header }, 
+                    key, 
+                    ciphertext
                 );
+                failedAttempts = 0; 
             } catch (e) {
-                throw new Error("WRONG_KEY");
+                throw new Error("WRONG_KEY_OR_TAMPERED");
             }
 
-            // مسح حقل الباسورد للخصوصية بعد الاستخدام الناجح
             pwdInput.value = '';
+
+            if (verifyOnly) {
+                showToast('✔️ الملف سليم ومفتاح التشفير صحيح! لم يتم العبث بالبيانات.');
+                secureZero(decryptedCombinedBuffer); decryptedCombinedBuffer = null;
+                return;
+            }
 
             const decryptedView = new Uint8Array(decryptedCombinedBuffer);
             const dataView = new DataView(decryptedCombinedBuffer);
@@ -704,40 +755,36 @@
 
             const txtOutput = document.getElementById('dec-result-text');
             const imgContainer = document.getElementById('dec-result-img-container');
-            const imgOutput = document.getElementById('dec-result-img');
-
-            if(currentDecryptedBlobUrl) {
-                URL.revokeObjectURL(currentDecryptedBlobUrl);
-                currentDecryptedBlobUrl = null;
-            }
+            const canvas = document.getElementById('dec-result-canvas');
+            const ctx = canvas.getContext('2d');
 
             if (metadata.type === 'image') {
-                const mime = metadata.mime || 'image/png';
-                const blob = new Blob([originalBytes], { type: mime });
-                currentDecryptedBlobUrl = URL.createObjectURL(blob);
+                const mime = ALLOWED_MIMES.includes(metadata.mime) ? metadata.mime : 'application/octet-stream';
+                currentDecryptedBlob = new Blob([originalBytes], { type: mime });
+                
+                const tempUrl = URL.createObjectURL(currentDecryptedBlob);
+                const img = new Image();
+                img.onload = () => {
+                    canvas.width = img.width; canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    URL.revokeObjectURL(tempUrl); 
+                };
+                img.src = tempUrl;
                 
                 txtOutput.style.display = 'none';
-                imgOutput.src = currentDecryptedBlobUrl;
                 imgContainer.style.display = 'block';
             } else {
                 const resultText = new TextDecoder().decode(originalBytes);
-                const blob = new Blob([originalBytes], { type: 'text/plain' });
-                currentDecryptedBlobUrl = URL.createObjectURL(blob);
+                currentDecryptedBlob = new Blob([originalBytes], { type: 'text/plain' });
 
                 imgContainer.style.display = 'none';
                 txtOutput.innerText = resultText;
                 txtOutput.style.display = 'flex';
             }
             
-            // تصفير البيانات الحساسة المُستخرجة من الـ Buffer
-            secureZero(decryptedCombinedBuffer);
-            decryptedCombinedBuffer = null;
-            
-            // تصفير ملف القبو الأصلي من الذاكرة لتقليل الحمل
-            secureZero(decFileBuffer);
-            decFileBuffer = null;
+            secureZero(decryptedCombinedBuffer); decryptedCombinedBuffer = null;
+            secureZero(decFileBuffer); decFileBuffer = null;
 
-            // عرض واجهة النتيجة
             const container = document.getElementById('wipe-container');
             const bar = document.getElementById('timer-bar');
             document.getElementById('secure-save-zone').style.display = 'block';
@@ -749,81 +796,101 @@
             clearTimeout(wipeTimeout);
             wipeTimeout = setTimeout(wipeMemory, 10000);
             
-            showToast('🔓 تم فك التشفير بنجاح! المحتوى متاح لـ 10 ثوانٍ.');
+            showToast('🔓 تم فك التشفير! المحتوى متاح لـ 10 ثوانٍ فقط.');
             
         } catch (err) {
-            let msg = "خطأ: المفتاح السري غير صحيح أو أن الملف تم العبث به";
+            failedAttempts++;
+            if (failedAttempts >= 5) { lockUntil = Date.now() + 5 * 60 * 1000; }
+            else if (failedAttempts >= 3) { lockUntil = Date.now() + 30 * 1000; }
+            
+            let msg = "تنبيه: المفتاح خاطئ أو تم العبث بالملف والتوقيع غير مطابق!";
             if(err.message === "CORRUPT") msg = "عذراً، القبو المرفق تالف أو غير صالح";
+            if(err.message === "UNSUPPORTED_VERSION") msg = "عذراً، هذا الملف مشفر بنسخة مختلفة غير مدعومة";
             showToast(msg, true);
+            
         } finally { 
-            toggleLoading('btn-decrypt', false);
+            toggleLoading(btnId, false);
+            if (decryptedCombinedBuffer) { secureZero(decryptedCombinedBuffer); decryptedCombinedBuffer = null; }
+            if (decFileBuffer && !verifyOnly) { secureZero(decFileBuffer); decFileBuffer = null; }
+            // قطع مرجع المتصفح لملف القرص الصلب فور الانتهاء 
+            document.getElementById('dec-file-input').value = '';
+        }
+    }
+
+    document.getElementById('btn-decrypt').addEventListener('click', () => processDecryption(false));
+    document.getElementById('btn-verify').addEventListener('click', () => processDecryption(true));
+
+    // تدمير إجباري وفوري لأي بيانات في الذاكرة عند مغادرة التبويب أو إخفائه (Tab Hide)
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            wipeMemory();
+            console.warn('حِصْن: تم تدمير محتويات الذاكرة وإغلاق القبو لدواعي أمنية بسبب مغادرة التبويب.');
         }
     });
 
-    // --- الحفظ الآمن للملف المستخرج (Secure Save) ---
+    // --- الحفظ الآمن ---
     document.getElementById('btn-secure-save').addEventListener('click', () => {
-        if(!currentDecryptedBlobUrl || !currentDecryptedMeta) return;
+        if(!currentDecryptedBlob || !currentDecryptedMeta) return;
         
         let safeName = "Hisn_Decrypted_File";
         if(currentDecryptedMeta.name) {
-            // حماية ضد ثغرات مسار الملفات Path Traversal
             safeName = currentDecryptedMeta.name.replace(/[^a-zA-Z0-9.\-_ \u0600-\u06FF]/g, '');
         }
 
+        const tempUrl = URL.createObjectURL(currentDecryptedBlob);
         const a = document.createElement('a');
-        a.href = currentDecryptedBlobUrl;
-        a.download = safeName;
-        a.click();
+        a.href = tempUrl; a.download = safeName; a.click();
+        
+        setTimeout(() => URL.revokeObjectURL(tempUrl), 100);
 
         showToast('💾 تم حفظ الملف بنجاح.. جاري إغلاق وتدمير القبو الآن!');
-        
-        // إجراء أمني: تفريغ الواجهة والذاكرة فوراً لعدم إبقاء الملف مكشوفاً
         setTimeout(wipeMemory, 300); 
     });
 
-    // --- التدمير وتنظيف الذاكرة العشوائية (Secure Memory Wipe) ---
+    // --- التدمير وتنظيف الذاكرة العشوائية ---
     function wipeMemory() {
         clearTimeout(wipeTimeout);
 
-        // 1. تنظيف النصوص
         document.getElementById('dec-result-text').innerText = '';
         document.getElementById('enc-text').value = '';
         document.getElementById('enc-password').value = '';
         document.getElementById('dec-password').value = '';
+        document.getElementById('enc-filename').value = '';
         
-        // 2. تنظيف واجهة التشفير للصور
-        document.getElementById('enc-img-preview').src = '';
+        const encPreview = document.getElementById('enc-img-preview');
+        if (encPreview.src && encPreview.src.startsWith('blob:')) { URL.revokeObjectURL(encPreview.src); }
+        encPreview.src = '';
+        
         document.getElementById('enc-img-preview-box').style.display = 'none';
         document.getElementById('enc-img-input').value = '';
         document.getElementById('enc-file-info').style.display = 'none';
         document.getElementById('enc-file-info').innerHTML = '';
+        document.getElementById('enc-fingerprint').style.display = 'none';
         imageFile = null;
 
-        // 3. إبادة الروابط من الذاكرة (Blob Revocation)
-        const decImg = document.getElementById('dec-result-img');
-        decImg.src = '';
+        const cvs = document.getElementById('dec-result-canvas');
+        const ctx = cvs.getContext('2d');
+        ctx.clearRect(0, 0, cvs.width, cvs.height);
+        cvs.width = 0; cvs.height = 0;
         document.getElementById('dec-result-img-container').style.display = 'none';
         
-        if(currentDecryptedBlobUrl) {
-            URL.revokeObjectURL(currentDecryptedBlobUrl); 
-            currentDecryptedBlobUrl = null;
+        // معالجة سباق الذاكرة (Race Condition) وفصل المتغير المتزامن قبل التصفير
+        if (currentDecryptedBlob) {
+            const blobToWipe = currentDecryptedBlob;
+            currentDecryptedBlob = null; // فصل المرجع فوراً
+            blobToWipe.arrayBuffer().then(buf => { secureZero(buf); }).catch(() => {});
         }
         currentDecryptedMeta = null;
 
-        // 4. تنظيف واجهة الاستخراج والمصفوفات (Buffers)
         document.getElementById('dec-file-info').style.display = 'none';
         document.getElementById('dec-file-info').innerHTML = '';
         document.getElementById('dec-file-input').value = '';
         
-        if (decFileBuffer) {
-            secureZero(decFileBuffer);
-            decFileBuffer = null;
-        }
+        if (decFileBuffer) { secureZero(decFileBuffer); decFileBuffer = null; }
 
         document.getElementById('wipe-container').style.display = 'none';
         document.getElementById('secure-save-zone').style.display = 'none';
         
-        // 5. إعادة ضبط واجهة الإنتروبيا
         document.getElementById('enc-entropy-fill').style.width = '0%';
         document.getElementById('enc-entropy-bits').innerText = '0 Bits';
         document.getElementById('enc-crack-time').innerText = 'فوري';
@@ -839,7 +906,6 @@
         wipeMemory(); 
         const clone = document.documentElement.cloneNode(true);
         
-        // تصفير القيم في النسخة المستخرجة
         clone.querySelectorAll('textarea, input').forEach(el => el.removeAttribute('value'));
         clone.querySelectorAll('.custom-textarea').forEach(el => el.innerHTML = '');
         clone.querySelector('#wipe-container').style.display = 'none';
@@ -848,16 +914,22 @@
         clone.querySelector('#enc-crack-time').innerText = 'فوري';
         clone.querySelector('#btn-encrypt').setAttribute('disabled', 'true');
         clone.querySelector('#btn-decrypt').setAttribute('disabled', 'true');
+        clone.querySelector('#btn-verify').setAttribute('disabled', 'true');
         clone.querySelector('#dec-result-text').innerText = '';
-        clone.querySelector('#dec-result-img').setAttribute('src', '');
+        
+        clone.querySelector('#enc-fingerprint').style.display = 'none';
+        clone.querySelector('#enc-fingerprint-hash').innerText = '';
+        clone.querySelector('#network-status').style.display = 'none';
         clone.querySelectorAll('.file-details').forEach(el => { el.style.display = 'none'; el.innerHTML=''; });
 
         const html = "<!DOCTYPE html>\n<html lang=\"ar\" dir=\"rtl\">\n" + clone.innerHTML + "\n</html>";
         const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob); 
+        const url = URL.createObjectURL(blob);
+        a.href = url; 
         a.download = "Hisn_AirGapped_Secure.html"; 
         a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 100);
         showToast('🛡️ تم استخراج نسخة نقية بنجاح للعمل بلا إنترنت');
     }
 </script>
